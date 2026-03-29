@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>需求编写器 🤖</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root{--bg-main:#f8f9fa;--text-primary:#1a1a2e;--card-bg:#ffffff;--preview-bg:#f1f3f5;--border-color:#dee2e6;--accent:#0d6efd}
+        *{font-family:"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;color:var(--text-primary);line-height:1.6}
+        body{background-color:var(--bg-main);min-height:100vh}
+        .navbar{background-color:var(--card-bg)!important;border-bottom:1px solid var(--border-color);box-shadow:0 0.125rem 0.25rem rgba(0,0,0,0.05)}
+        .navbar-brand{font-weight:600;font-size:1.1rem}
+        .card{background-color:var(--card-bg);border:1px solid var(--border-color);border-radius:0.75rem;box-shadow:0 0.25rem 0.75rem rgba(0,0,0,0.05)}
+        .card-body{padding:1.5rem}
+        .section-title{font-size:0.8rem;font-weight:600;margin-bottom:0.75rem}
+        .form-label{font-size:0.9rem;font-weight:500}
+        .form-control,.form-select{font-size:0.95rem;line-height:1.6}
+        .form-text-custom{font-size:0.8rem;color:#6c757d;margin-bottom:0.25rem}
+        .step-indicator{display:flex;gap:0.5rem;margin-bottom:1.5rem}
+        .step-btn{flex:1;padding:0.5rem;font-size:0.8rem;border-radius:0.5rem;border:1px solid var(--border-color);background:var(--card-bg);color:#6c757d;cursor:pointer;transition:all 0.2s;text-align:center}
+        .step-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+        .step-btn:hover:not(.active){background:#e9ecef}
+        .step-content{display:none}
+        .step-content.active{display:block}
+        .step-header{display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border-color)}
+        .step-header i{font-size:1rem;color:var(--accent)}
+        .btn-sm-icon{font-size:0.875rem}
+        .preview-header{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;background:var(--preview-bg);border-bottom:1px solid var(--border-color);border-radius:0.75rem 0.75rem 0 0}
+        .preview-title{display:flex;align-items:center;gap:0.5rem;font-weight:600;font-size:0.9rem;margin:0}
+        .preview-content{background:var(--preview-bg);border-radius:0 0 0.75rem 0.75rem;padding:1rem 1.25rem;min-height:400px;max-height:600px;overflow-y:auto}
+        .preview-content h1{font-size:1.5rem;margin-bottom:0.5rem}
+        .preview-content h2{font-size:1.2rem;margin:1rem 0 0.5rem;border-bottom:1px solid var(--border-color);padding-bottom:0.25rem}
+        .preview-content p{margin:0.5rem 0}
+        .preview-content ul,.preview-content ol{padding-left:1.5rem;margin:0.5rem 0}
+        .preview-content li{margin:0.25rem 0}
+        .preview-content blockquote{background:#e7f5ff;border-left:3px solid var(--accent);padding:0.5rem 1rem;margin:0.5rem 0;border-radius:0 0.25rem 0.25rem 0}
+        .requirement-item{display:flex;align-items:flex-start;gap:0.5rem;padding:0.5rem;background:#f8f9fa;border-radius:0.5rem;margin-bottom:0.5rem}
+        .requirement-item .req-number{min-width:1.5rem;height:1.5rem;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:600}
+        .requirement-item input{flex:1;border:none;background:transparent;font-size:0.95rem}
+        .requirement-item input:focus{outline:none}
+        .checkbox-emoji label{display:inline-flex;align-items:center;gap:0.25rem;margin-right:1rem;font-size:0.95rem;cursor:pointer}
+        .checkbox-emoji input[type=checkbox]{width:1rem;height:1rem}
+        .radio-emoji label{display:inline-flex;align-items:center;gap:0.25rem;margin-right:1rem;font-size:0.95rem;cursor:pointer}
+        .radio-emoji input[type=radio]{width:1rem;height:1rem}
+        .toast-container{position:fixed;bottom:1.5rem;right:1.5rem;z-index:1100}
+        .toast-success{background:#198754;color:#fff;border-radius:0.5rem;padding:0.75rem 1.25rem;box-shadow:0 0.5rem 1rem rgba(0,0,0,0.15);display:flex;align-items:center;gap:0.5rem}
+        .modal-header{background:var(--card-bg);border-bottom:1px solid var(--border-color)}
+        .help-modal .modal-body{padding:1.5rem}
+        .help-modal .modal-body h5{font-size:1rem;margin:1rem 0 0.5rem}
+        .help-modal .modal-body h5:first-child{margin-top:0}
+        .help-modal .modal-body ul{padding-left:1.5rem}
+        .help-modal .modal-body li{margin:0.25rem 0}
+        .btn-group-actions{display:flex;gap:0.5rem}
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light mb-3">
+    <div class="container-fluid">
+        <span class="navbar-brand">🤖 需求编写器</span>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" onclick="showHelp()"><i class="bi bi-question-circle"></i> 编写指南</button>
+        </div>
+    </div>
+</nav>
+<div class="container-fluid px-4">
+<div class="row g-4">
+<div class="col-lg-6">
+<div class="card">
+<div class="card-body">
+<div class="step-indicator">
+    <button class="step-btn active" onclick="showStep(1)">1 基本信息</button>
+    <button class="step-btn" onclick="showStep(2)">2 交互风格</button>
+    <button class="step-btn" onclick="showStep(3)">3 需求详情</button>
+    <button class="step-btn" onclick="showStep(4)">4 预期结果</button>
+    <button class="step-btn" onclick="showStep(5)">5 约束条件</button>
+</div>
+
+<!-- Step 1 -->
+<div class="step-content active" id="step1">
+    <div class="step-header"><i class="bi bi-info-circle"></i><h5 class="section-title mb-0">基本信息</h5></div>
+    <div class="mb-3">
+        <label class="form-label"><i class="bi bi-card-text"></i> 需求标题</label>
+        <p class="form-text-custom">简短明确，如：优化首页加载速度</p>
+        <input type="text" class="form-control" id="title" placeholder="如：优化首页加载速度">
+    </div>
+    <div class="row mb-3">
+        <div class="col-6">
+            <label class="form-label"><i class="bi bi-tag"></i> 项目类型</label>
+            <p class="form-text-custom">选择需求类型</p>
+            <select class="form-select" id="type">
+                <option value="🆕新增功能">🆕新增功能</option>
+                <option value="⚡功能优化">⚡功能优化</option>
+                <option value="🐛Bug修复">🐛Bug修复</option>
+                <option value="🔄重构">🔄重构</option>
+                <option value="📝文档更新">📝文档更新</option>
+                <option value="📦其他">📦其他</option>
+            </select>
+        </div>
+        <div class="col-6">
+            <label class="form-label"><i class="bi bi-flag"></i> 优先级</label>
+            <p class="form-text-custom">选择重要程度</p>
+            <select class="form-select" id="priority">
+                <option value="🔴必须实现">🔴必须实现</option>
+                <option value="🟡建议实现" selected>🟡建议实现</option>
+                <option value="🟢可选">🟢可选</option>
+                <option value="🟣实验性">🟣实验性</option>
+            </select>
+        </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label"><i class="bi bi-chat-left-text"></i> 上下文/背景</label>
+        <p class="form-text-custom">描述使用场景和需求背景</p>
+        <div class="d-flex gap-2 mb-2">
+            <button class="btn btn-outline-secondary btn-sm" onclick="insertTemplate('background')"><i class="bi bi-file-earmark-text"></i> 使用场景模板</button>
+        </div>
+        <textarea class="form-control" id="background" rows="4" placeholder="描述需求产生的背景、用户场景等..."></textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label"><i class="bi bi-calendar-event"></i> 截止时间</label>
+        <p class="form-text-custom">计划完成日期</p>
+        <input type="date" class="form-control" id="deadline1">
+    </div>
+</div>
+
+<!-- Step 2 -->
+<div class="step-content" id="step2">
+    <div class="step-header"><i class="bi bi-palette"></i><h5 class="section-title mb-0">交互风格</h5></div>
+    <div class="mb-4">
+        <label class="form-label"><i class="bi bi-cursor"></i> 交互方式</label>
+        <p class="form-text-custom">选择用户与系统交互的主要方式（可多选）</p>
+        <div class="checkbox-emoji">
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="style-cmd" value="⌨️命令式"><label class="form-check-label" for="style-cmd">⌨️ 命令式</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="style-chat" value="💬对话式"><label class="form-check-label" for="style-chat">💬 对话式</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="style-guide" value="📋引导式"><label class="form-check-label" for="style-guide">📋 引导式</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="style-auto" value="🤖自动化"><label class="form-check-label" for="style-auto">🤖 自动化</label></div>
+        </div>
+    </div>
+    <div class="mb-4">
+        <label class="form-label"><i class="bi bi-palette2"></i> 界面色调</label>
+        <p class="form-text-custom">选择整体视觉风格</p>
+        <div class="radio-emoji">
+            <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="theme" id="theme-simple" value="✨简洁" checked><label class="form-check-label" for="theme-simple">✨ 简洁</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="theme" id="theme-vivid" value="🎨活泼"><label class="form-check-label" for="theme-vivid">🎨 活泼</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="theme" id="theme-pro" value="💼专业"><label class="form-check-label" for="theme-pro">💼 专业</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="theme" id="theme-dark" value="🌙暗色"><label class="form-check-label" for="theme-dark">🌙 暗色</label></div>
+        </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label"><i class="bi bi-file-earmark"></i> 输出格式</label>
+        <p class="form-text-custom">期望的输出展示形式（可多选）</p>
+        <div class="checkbox-emoji">
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="format-table" value="📊表格"><label class="form-check-label" for="format-table">📊 表格</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="format-list" value="📋列表"><label class="form-check-label" for="format-list">📋 列表</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="format-tree" value="🌳树形"><label class="form-check-label" for="format-tree">🌳 树形</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="format-text" value="📄纯文本"><label class="form-check-label" for="format-text">📄 纯文本</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="format-rich" value="🎯富文本"><label class="form-check-label" for="format-rich">🎯 富文本</label></div>
+        </div>
+    </div>
+</div>
+
+<!-- Step 3 -->
+<div class="step-content" id="step3">
+    <div class="step-header"><i class="bi bi-list-task"></i><h5 class="section-title mb-0">需求详情</h5></div>
+    <div class="mb-4">
+        <label class="form-label"><i class="bi bi-star"></i> 核心需求</label>
+        <p class="form-text-custom">用动词开头，描述要实现的功能</p>
+        <textarea class="form-control" id="coreRequirement" rows="4" placeholder="如：实现用户登录功能，支持手机号+验证码登录..."></textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label"><i class="bi bi-check2-square"></i> 具体要求</label>
+        <p class="form-text-custom">逐条列出具体要求</p>
+        <div id="requirementsList"></div>
+        <button class="btn btn-outline-primary btn-sm mt-2" onclick="addRequirement()"><i class="bi bi-plus-circle"></i> 添加要求</button>
+    </div>
+</div>
+
+<!-- Step 4 -->
+<div class="step-content" id="step4">
+    <div class="step-header"><i class="bi bi-bullseye"></i><h5 class="section-title mb-0">预期结果</h5></div>
+    <div class="mb-4">
+        <label class="form-label"><i class="bi bi-target"></i> 期望目标</label>
+        <p class="form-text-custom">完成后应达到什么效果</p>
+        <textarea class="form-control" id="goals" rows="3" placeholder="描述期望达成的目标..."></textarea>
+    </div>
+    <div class="mb-4">
+        <label class="form-label"><i class="bi bi-clipboard-check"></i> 验收标准</label>
+        <p class="form-text-custom">具体可衡量的标准，每行一条</p>
+        <textarea class="form-control" id="acceptance" rows="4" placeholder="1. 页面加载时间 &lt; 2秒&#10;2. 支持1000并发用户&#10;3. ..."></textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label"><i class="bi bi-book"></i> 示例/参考</label>
+        <p class="form-text-custom">相关参考链接或示例</p>
+        <textarea class="form-control" id="references" rows="3" placeholder="参考链接或相关示例..."></textarea>
+    </div>
+</div>
+
+<!-- Step 5 -->
+<div class="step-content" id="step5">
+    <div class="step-header"><i class="bi bi-sliders"></i><h5 class="section-title mb-0">约束条件</h5></div>
+    <div class="mb-4">
+        <label class="form-label"><i class="bi bi-laptop"></i> 技术栈</label>
+        <p class="form-text-custom">选择应用的技术平台（可多选）</p>
+        <div class="checkbox-emoji">
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="tech-web" value="🌐Web"><label class="form-check-label" for="tech-web">🌐 Web</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="tech-mobile" value="📱移动端"><label class="form-check-label" for="tech-mobile">📱 移动端</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="tech-desktop" value="💻桌面端"><label class="form-check-label" for="tech-desktop">💻 桌面端</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="tech-api" value="🔌API"><label class="form-check-label" for="tech-api">🔌 API</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="tech-cli" value="⌨️CLI"><label class="form-check-label" for="tech-cli">⌨️ CLI</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="tech-embed" value="🔧嵌入式"><label class="form-check-label" for="tech-embed">🔧 嵌入式</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="tech-other" value="📦其他"><label class="form-check-label" for="tech-other">📦 其他</label></div>
+        </div>
+    </div>
+    <div class="mb-4">
+        <label class="form-label"><i class="bi bi-browser-chrome"></i> 兼容性</label>
+        <p class="form-text-custom">支持的运行环境</p>
+        <input type="text" class="form-control" id="compatibility" value="主流浏览器最新版" placeholder="如：iOS 14+, Android 10+...">
+    </div>
+    <div class="mb-4">
+        <label class="form-label"><i class="bi bi-sticky"></i> 备注</label>
+        <p class="form-text-custom">其他补充说明</p>
+        <textarea class="form-control" id="notes" rows="3" placeholder="其他需要说明的内容..."></textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label"><i class="bi bi-calendar-event"></i> 截止时间</label>
+        <p class="form-text-custom">计划完成日期</p>
+        <input type="date" class="form-control" id="deadline2">
+    </div>
+</div>
+
+<div class="d-flex justify-content-between mt-4 pt-3 border-top">
+    <button class="btn btn-outline-secondary btn-sm-icon" id="prevBtn" onclick="prevStep()" style="display:none;"><i class="bi bi-arrow-left"></i> 上一步</button>
+    <div class="ms-auto">
+        <button class="btn btn-primary btn-sm-icon" id="nextBtn" onclick="nextStep()">下一步 <i class="bi bi-arrow-right"></i></button>
+        <button class="btn btn-success btn-sm-icon" id="submitBtn" onclick="openSaveModal()" style="display:none;"><i class="bi bi-check-circle"></i> 完成</button>
+    </div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col-lg-6">
+<div class="card">
+<div class="preview-header">
+    <span class="preview-title"><i class="bi bi-file-text"></i> 📝 实时预览</span>
+    <div class="btn-group-actions">
+        <button class="btn btn-outline-secondary btn-sm" onclick="loadFile()"><i class="bi bi-upload"></i> 加载📤</button>
+        <button class="btn btn-outline-primary btn-sm" onclick="openSaveModal()"><i class="bi bi-download"></i> 保存📥</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="copyMarkdown()"><i class="bi bi-clipboard"></i> 复制📋</button>
+    </div>
+</div>
+<div class="preview-content" id="previewContent"><p class="text-muted"><em>填写左侧表单，实时预览将在这里显示...</em></p></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Save Modal -->
+<div class="modal fade" id="saveModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-download"></i> 📥 保存需求文档</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">文件名</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="saveFilename" value="需求文档" placeholder="输入文件名">
+                    <span class="input-group-text">.md</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveFile()"><i class="bi bi-download"></i> 保存📥</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal fade help-modal" id="helpModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-question-circle"></i> 📖 需求编写指南</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h5><i class="bi bi-info-circle text-primary"></i> 什么是好的需求文档？</h5>
+                <ul>
+                    <li><strong>清晰明确</strong>：避免模糊表述，用具体的数据或行为描述</li>
+                    <li><strong>可衡量</strong>：设定明确的验收标准，便于判断是否完成</li>
+                    <li><strong>完整性</strong>：覆盖功能、性能、兼容性等各个方面</li>
+                    <li><strong>可追溯</strong>：关联业务背景和目标</li>
+                </ul>
+                <h5><i class="bi bi-list-check text-success"></i> 填写技巧</h5>
+                <ul>
+                    <li>标题：用动词开头，简短有力，如"实现..."、"优化..."</li>
+                    <li>背景：说明为什么需要这个功能，目标和价值</li>
+                    <li>核心需求：描述用户真正要完成的任务</li>
+                    <li>具体要求：分解为可执行的小项，每项独立且可测试</li>
+                    <li>验收标准：用数字量化，如"响应时间 &lt; 200ms"</li>
+                </ul>
+                <h5><i class="bi bi-keyboard text-info"></i> 快捷操作</h5>
+                <ul>
+                    <li>Ctrl/Cmd + S：保存文档</li>
+                    <li>加载已有文档可继续编辑</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="file" id="fileInput" accept=".md" style="display:none">
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+var currentStep=1,totalSteps=5,requirements=[],saveModalInstance=null,helpModalInstance=null;
+
+document.addEventListener('DOMContentLoaded',function(){
+    saveModalInstance=new bootstrap.Modal(document.getElementById('saveModal'));
+    helpModalInstance=new bootstrap.Modal(document.getElementById('helpModal'));
+    document.getElementById('fileInput').addEventListener('change',handleFileLoad);
+    var els=document.querySelectorAll('input, textarea, select');
+    for(var i=0;i<els.length;i++){els[i].addEventListener('input',updatePreview);}
+    var cbs=document.querySelectorAll('input[type=checkbox], input[type=radio]');
+    for(var j=0;j<cbs.length;j++){cbs[j].addEventListener('change',updatePreview);}
+    updatePreview();
+});
+
+function showStep(n){
+    var steps=document.querySelectorAll('.step-content');
+    for(var i=0;i<steps.length;i++){steps[i].classList.remove('active');}
+    var btns=document.querySelectorAll('.step-btn');
+    for(var j=0;j<btns.length;j++){btns[j].classList.remove('active');}
+    document.getElementById('step'+n).classList.add('active');
+    btns[n-1].classList.add('active');
+    currentStep=n;
+    updateNavButtons();
+}
+
+function nextStep(){if(currentStep<totalSteps)showStep(currentStep+1);}
+function prevStep(){if(currentStep>1)showStep(currentStep-1);}
+
+function updateNavButtons(){
+    document.getElementById('prevBtn').style.display=currentStep>1?'inline-block':'none';
+    document.getElementById('nextBtn').style.display=currentStep<totalSteps?'inline-block':'none';
+    document.getElementById('submitBtn').style.display=currentStep===totalSteps?'inline-block':'none';
+}
+
+function getInteractionStyles(){
+    var s=[];
+    if(document.getElementById('style-cmd').checked)s.push('⌨️命令式');
+    if(document.getElementById('style-chat').checked)s.push('💬对话式');
+    if(document.getElementById('style-guide').checked)s.push('📋引导式');
+    if(document.getElementById('style-auto').checked)s.push('🤖自动化');
+    return s;
+}
+
+function getOutputFormats(){
+    var f=[];
+    if(document.getElementById('format-table').checked)f.push('📊表格');
+    if(document.getElementById('format-list').checked)f.push('📋列表');
+    if(document.getElementById('format-tree').checked)f.push('🌳树形');
+    if(document.getElementById('format-text').checked)f.push('📄纯文本');
+    if(document.getElementById('format-rich').checked)f.push('🎯富文本');
+    return f;
+}
+
+function getTechStack(){
+    var t=[];
+    if(document.getElementById('tech-web').checked)t.push('🌐Web');
+    if(document.getElementById('tech-mobile').checked)t.push('📱移动端');
+    if(document.getElementById('tech-desktop').checked)t.push('💻桌面端');
+    if(document.getElementById('tech-api').checked)t.push('🔌API');
+    if(document.getElementById('tech-cli').checked)t.push('⌨️CLI');
+    if(document.getElementById('tech-embed').checked)t.push('🔧嵌入式');
+    if(document.getElementById('tech-other').checked)t.push('📦其他');
+    return t;
+}
+
+function formatDate(d){
+    if(!d)return '';
+    var dt=new Date(d);
+    return dt.getFullYear()+'/'+(dt.getMonth()+1)+'/'+dt.getDate();
+}
+
+function generateMarkdown(){
+    var title=document.getElementById('title').value||'未命名需求';
+    var priority=document.getElementById('priority').value;
+    var background=document.getElementById('background').value;
+    var deadline1=document.getElementById('deadline1').value;
+    var deadline2=document.getElementById('deadline2').value;
+    var deadline=deadline2||deadline1;
+    var coreReq=document.getElementById('coreRequirement').value;
+    var goals=document.getElementById('goals').value;
+    var acceptance=document.getElementById('acceptance').value;
+    var references=document.getElementById('references').value;
+    var compatibility=document.getElementById('compatibility').value;
+    var notes=document.getElementById('notes').value;
+    var styles=getInteractionStyles();
+    var themeEl=document.querySelector('input[name=theme]:checked');
+    var theme=themeEl?themeEl.value:'✨简洁';
+    var formats=getOutputFormats();
+    var techStack=getTechStack();
+    var accMd='';
+    if(acceptance.trim()){
+        var lines=acceptance.split('\n');
+        for(var i=0;i<lines.length;i++){
+            var line=lines[i].replace(/^[\d\.\)\s]+/,'').trim();
+            if(line)accMd+='- [ ] '+line+'\n';
+        }
+    }
+    var reqMd='';
+    for(var j=0;j<requirements.length;j++){
+        if(requirements[j].trim())reqMd+=(j+1)+'. '+requirements[j]+'\n';
+    }
+    var md='# '+title+'\n\n> '+priority;
+    if(deadline)md+=' &nbsp;|&nbsp; 📅 **截止：** '+formatDate(deadline);
+    md+='\n\n';
+    if(background.trim())md+='## 背景\n'+background+'\n\n';
+    if(styles.length>0||formats.length>0){
+        md+='## 交互风格\n';
+        if(styles.length>0)md+='- **交互方式：** '+styles.join('、')+'\n';
+        md+='- **界面色调：** '+theme+'\n';
+        if(formats.length>0)md+='- **输出格式：** '+formats.join('、')+'\n';
+        md+='\n';
+    }
+    if(coreReq.trim()||reqMd.trim()){
+        md+='## 需求\n';
+        if(coreReq.trim())md+=coreReq+'\n\n';
+        if(reqMd.trim())md+=reqMd+'\n';
+        md+='\n';
+    }
+    if(goals.trim())md+='## 预期结果\n'+goals+'\n\n';
+    if(accMd.trim())md+='## 验收标准\n'+accMd+'\n';
+    if(references.trim())md+='## 示例/参考\n'+references+'\n\n';
+    if(techStack.length>0||compatibility.trim()||notes.trim()){
+        md+='## 约束条件\n';
+        if(techStack.length>0)md+='- **技术栈：** '+techStack.join('、')+'\n';
+        if(compatibility.trim())md+='- **兼容性：** '+compatibility+'\n';
+        if(notes.trim())md+='- **备注：** '+notes+'\n';
+    }
+    return md;
+}
+
+function renderMarkdown(md){
+    var html=md;
+    html=html.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+    html=html.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+    html=html.replace(/^# (.+)$/gm,'<h1>$1</h1>');
+    html=html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+    html=html.replace(/^\> (.+)$/gm,'<blockquote>$1</blockquote>');
+    html=html.replace(/^\- \[ \] (.+)$/gm,'<div class="form-check"><input class="form-check-input" type="checkbox" disabled><label class="form-check-label">$1</label></div>');
+    html=html.replace(/^\- (.+)$/gm,'<li>$1</li>');
+    html=html.replace(/^(\d+)\. (.+)$/gm,'<li>$2</li>');
+    html=html.replace(/(<li>.*<\/li>\n?)+/g,function(m){return '<ul>'+m+'</ul>';});
+    html=html.replace(/\n\n/g,'</p><p>');
+    html=html.replace(/\n/g,'<br>');
+    html='<p>'+html+'</p>';
+    html=html.replace(/<p><(h[123]|blockquote|ul|div)/g,'<$1');
+    html=html.replace(/<\/(h[123]|blockquote|ul|div)><\/p>/g,'</$1>');
+    html=html.replace(/<p><\/p>/g,'');
+    return html;
+}
+
+function updatePreview(){
+    var md=generateMarkdown();
+    document.getElementById('previewContent').innerHTML=renderMarkdown(md);
+}
+
+function addRequirement(){
+    requirements.push('');
+    renderRequirements();
+}
+
+function removeRequirement(idx){
+    requirements.splice(idx,1);
+    renderRequirements();
+    updatePreview();
+}
+
+function renderRequirements(){
+    var container=document.getElementById('requirementsList');
+    var html='';
+    for(var i=0;i<requirements.length;i++){
+        html+='<div class="requirement-item">';
+        html+='<span class="req-number">'+(i+1)+'</span>';
+        html+='<input type="text" value="'+requirements[i]+'" placeholder="具体要求..." oninput="requirements['+i+']=this.value;updatePreview();">';
+        html+='<button class="btn btn-sm btn-outline-danger" onclick="removeRequirement('+i+')"><i class="bi bi-x"></i></button>';
+        html+='</div>';
+    }
+    container.innerHTML=html;
+}
+
+function insertTemplate(type){
+    if(type==='background'){
+        document.getElementById('background').value='## 用户场景\n目标用户：[描述目标用户群体]\n使用环境：[使用环境描述]\n\n## 业务目标\n- 目标1\n- 目标2\n\n##业务目标\n- 目标1\n- 目标2\n\n## 价值预期\n[描述预期产生的业务价值]\n';
+    }
+}
+
+function showHelp(){
+    if(helpModalInstance)helpModalInstance.show();
+}
+
+function openSaveModal(){
+    if(saveModalInstance)saveModalInstance.show();
+}
+
+function saveFile(){
+    var filename=document.getElementById('saveFilename').value||'需求文档';
+    var md=generateMarkdown();
+    var blob=new Blob([md],{type:'text/markdown;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;
+    a.download=filename+'.md';
+    a.click();
+    URL.revokeObjectURL(url);
+    if(saveModalInstance)bootstrap.Modal.getInstance(document.getElementById('saveModal')).hide();
+    showToast('保存成功！');
+}
+
+function loadFile(){
+    document.getElementById('fileInput').click();
+}
+
+function handleFileLoad(e){
+    var file=e.target.files[0];
+    if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+        parseMarkdown(ev.target.result);
+        updatePreview();
+        showToast('加载成功！');
+    };
+    reader.readAsText(file);
+}
+
+function parseMarkdown(md){
+    var lines=md.split('\n');
+    var inAcceptance=false;
+    var inRequirements=false;
+    var reqCount=0;
+    requirements=[];
+    for(var i=0;i<lines.length;i++){
+        var line=lines[i];
+        if(line.match(/^# /)){
+            document.getElementById('title').value=line.replace(/^# /,'');
+        } else if(line.match(/🔴必须实现/)){
+            document.getElementById('priority').value='🔴必须实现';
+        } else if(line.match(/🟡建议实现/)){
+            document.getElementById('priority').value='🟡建议实现';
+        } else if(line.match(/🟢可选/)){
+            document.getElementById('priority').value='🟢可选';
+        } else if(line.match(/🟣实验性/)){
+            document.getElementById('priority').value='🟣实验性';
+        } else if(line.match(/🆕新增功能/)){
+            document.getElementById('type').value='🆕新增功能';
+        } else if(line.match(/⚡功能优化/)){
+            document.getElementById('type').value='⚡功能优化';
+        } else if(line.match(/🐛Bug修复/)){
+            document.getElementById('type').value='🐛Bug修复';
+        } else if(line.match(/🔄重构/)){
+            document.getElementById('type').value='🔄重构';
+        } else if(line.match(/📝文档更新/)){
+            document.getElementById('type').value='📝文档更新';
+        } else if(line.match(/📦其他/)){
+            document.getElementById('type').value='📦其他';
+        } else if(line.match(/\*\*截止：\*\* (.+)/)){
+            var d=RegExp.$1;
+            var parts=d.match(/(\d+)\/(\d+)\/(\d+)/);
+            if(parts){
+                var dt=new Date(parts[1],parts[2]-1,parts[3]);
+                var y=dt.getFullYear();
+                var m=('0'+(dt.getMonth()+1)).slice(-2);
+                var day=('0'+dt.getDate()).slice(-2);
+                var val=y+'-'+m+'-'+day;
+                document.getElementById('deadline1').value=val;
+                document.getElementById('deadline2').value=val;
+            }
+        } else if(line.match(/^## 背景/)){
+            var bg=[];
+            i++;
+            while(i<lines.length && !lines[i].match(/^## /)){
+                if(lines[i].trim())bg.push(lines[i]);
+                i++;
+            }
+            i--;
+            document.getElementById('background').value=bg.join('\n').trim();
+        } else if(line.match(/^## 需求/)){
+            var core=[];
+            i++;
+            while(i<lines.length && !lines[i].match(/^## /)){
+                if(lines[i].match(/^\d+\. /)){
+                    inRequirements=true;
+                    reqCount++;
+                    requirements.push(lines[i].replace(/^\d+\. /,''));
+                } else if(!inRequirements && lines[i].trim() && !lines[i].match(/^[#\-]/)){
+                    core.push(lines[i]);
+                }
+                i++;
+            }
+            i--;
+            if(core.length>0)document.getElementById('coreRequirement').value=core.join('\n').trim();
+        } else if(line.match(/^## 预期结果/)){
+            var goals=[];
+            i++;
+            while(i<lines.length && !lines[i].match(/^## /)){
+                if(lines[i].trim() && !lines[i].match(/^[#\-]/))goals.push(lines[i]);
+                i++;
+            }
+            i--;
+            document.getElementById('goals').value=goals.join('\n').trim();
+        } else if(line.match(/^## 验收标准/)){
+            inAcceptance=true;
+            var acc=[];
+            i++;
+            while(i<lines.length && !lines[i].match(/^## /)){
+                if(lines[i].match(/^\- \[ \] (.+)/)){
+                    acc.push(RegExp.$1);
+                }
+                i++;
+            }
+            i--;
+            document.getElementById('acceptance').value=acc.join('\n');
+        } else if(line.match(/^## 示例/)){
+            var refs=[];
+            i++;
+            while(i<lines.length && !lines[i].match(/^## /)){
+                if(lines[i].trim())refs.push(lines[i]);
+                i++;
+            }
+            i--;
+            document.getElementById('references').value=refs.join('\n').trim();
+        } else if(line.match(/\*\*交互方式：\*\* (.+)/)){
+            var st=RegExp.$1.split('、');
+            for(var j=0;j<st.length;j++){
+                if(st[j].match(/⌨️/))document.getElementById('style-cmd').checked=true;
+                if(st[j].match(/💬/))document.getElementById('style-chat').checked=true;
+                if(st[j].match(/📋/))document.getElementById('style-guide').checked=true;
+                if(st[j].match(/🤖/))document.getElementById('style-auto').checked=true;
+            }
+        } else if(line.match(/\*\*界面色调：\*\* (.+)/)){
+            var th=RegExp.$1;
+            var radios=document.querySelectorAll('input[name=theme]');
+            for(var k=0;k<radios.length;k++){
+                if(radios[k].value===th)radios[k].checked=true;
+            }
+        } else if(line.match(/\*\*输出格式：\*\* (.+)/)){
+            var fm=RegExp.$1.split('、');
+            for(var m=0;m<fm.length;m++){
+                if(fm[m].match(/📊/))document.getElementById('format-table').checked=true;
+                if(fm[m].match(/📋/))document.getElementById('format-list').checked=true;
+                if(fm[m].match(/🌳/))document.getElementById('format-tree').checked=true;
+                if(fm[m].match(/📄/))document.getElementById('format-text').checked=true;
+                if(fm[m].match(/🎯/))document.getElementById('format-rich').checked=true;
+            }
+        } else if(line.match(/\*\*技术栈：\*\* (.+)/)){
+            var ts=RegExp.$1.split('、');
+            for(var n=0;n<ts.length;n++){
+                if(ts[n].match(/🌐/))document.getElementById('tech-web').checked=true;
+                if(ts[n].match(/📱/))document.getElementById('tech-mobile').checked=true;
+                if(ts[n].match(/💻/))document.getElementById('tech-desktop').checked=true;
+                if(ts[n].match(/🔌/))document.getElementById('tech-api').checked=true;
+                if(ts[n].match(/⌨️/))document.getElementById('tech-cli').checked=true;
+                if(ts[n].match(/🔧/))document.getElementById('tech-embed').checked=true;
+                if(ts[n].match(/📦/))document.getElementById('tech-other').checked=true;
+            }
+        } else if(line.match(/\*\*兼容性：\*\* (.+)/)){
+            document.getElementById('compatibility').value=RegExp.$1;
+        } else if(line.match(/\*\*备注：\*\* (.+)/)){
+            document.getElementById('notes').value=RegExp.$1;
+        }
+    }
+    renderRequirements();
+}
+
+function copyMarkdown(){
+    var md=generateMarkdown();
+    navigator.clipboard.writeText(md).then(function(){
+        showToast('复制成功！');
+    });
+}
+
+function showToast(msg){
+    var container=document.getElementById('toastContainer');
+    var toast=document.createElement('div');
+    toast.className='toast-success';
+    toast.innerHTML='<i class="bi bi-check-circle-fill"></i> '+msg;
+    container.appendChild(toast);
+    setTimeout(function(){toast.remove();},3000);
+}
+
+document.addEventListener('keydown',function(e){
+    if((e.ctrlKey||e.metaKey)&&e.key==='s'){
+        e.preventDefault();
+        openSaveModal();
+    }
+});
+</script>
+</body>
+</html>
